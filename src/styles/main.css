@@ -156,11 +156,40 @@
 /* 在中日韩文字与西文/数字之间自动留一点间距（Chrome 123+ 支持，不支持的浏览器会直接忽略该声明） */
 html {
     text-autospace: normal;
+    /* CJK 标点压缩：把行首的开引号、括号收成半宽，避免版心右侧出现一块突兀的空白。
+       需要字体本身带 halt 或 chws 特性才会生效，否则浏览器会忽略整条声明。 */
+    text-spacing-trim: trim-start;
 }
 
-/* 中文词间没有空格做分隔，行距比英文需要更松一点才好读 */
+/* 中文词间没有空格做分隔，行距比英文需要更松一点才好读；
+   text-wrap: pretty 用来减少末行只剩一两个字的情况。 */
 .custom-md p,
 .custom-md li,
 .custom-md blockquote {
     line-height: 1.85;
+    text-wrap: pretty;
+}
+
+/* 标题用 balance 让多行标题的两行长度更接近 */
+.custom-md h1,
+.custom-md h2,
+.custom-md h3 {
+    text-wrap: balance;
+}
+
+/* 引文与紧随其后的批注（整段加粗）是一组，拉近两者的间距；
+   用 :has() 判断，浏览器不支持时只是保持默认间距，不影响可读性。 */
+.custom-md blockquote + p:has(> strong:only-child) {
+    margin-top: -0.5em;
+}
+
+/* 批注降一档：字号略小、颜色转淡，让引文保持主角地位 */
+.custom-md blockquote + p > strong:only-child {
+    font-weight: 600;
+    font-size: 0.95em;
+    color: oklch(0.55 0.02 var(--hue));
+}
+
+.dark .custom-md blockquote + p > strong:only-child {
+    color: oklch(0.78 0.02 var(--hue));
 }
