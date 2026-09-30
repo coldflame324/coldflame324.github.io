@@ -1,0 +1,78 @@
+---
+import { Icon } from "astro-icon/components";
+import MainGridLayout from "@layouts/MainGridLayout.astro";
+import { friends } from "../data/friends";
+
+const pageTitle = "友链";
+---
+<MainGridLayout title={pageTitle} description="寒火的朋友们">
+    <div class="flex w-full rounded-[var(--radius-large)] overflow-hidden relative min-h-32 mb-4">
+        <div class="card-base z-10 px-6 md:px-9 py-6 relative w-full onload-animation">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="transition h-9 w-9 rounded-lg bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center">
+                    <Icon name="material-symbols:link-rounded" class="text-[1.5rem]"></Icon>
+                </div>
+                <h1 class="text-2xl font-bold text-black/90 dark:text-white/90">{pageTitle}</h1>
+            </div>
+            <p class="text-sm text-black/50 dark:text-white/50 mb-6">
+                这里躺着一些我常去看的站点。想交换友链的话，在评论区或 B 站私信留言即可。
+            </p>
+
+            {friends.length > 0 ? (
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {friends.map((friend) => (
+                        <a
+                            href={friend.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="group flex gap-4 items-center p-4 rounded-2xl border border-[var(--line-divider)] bg-black/[0.02] dark:bg-white/[0.03] transition hover:border-[var(--primary)] hover:-translate-y-0.5 active:scale-[0.98]"
+                        >
+                            {friend.avatar ? (
+                                <img
+                                    src={friend.avatar}
+                                    alt={friend.name}
+                                    loading="lazy"
+                                    referrerpolicy="no-referrer"
+                                    class="w-12 h-12 rounded-full object-cover shrink-0 bg-black/5 dark:bg-white/10"
+                                />
+                            ) : (
+                                <div class="w-12 h-12 rounded-full shrink-0 bg-[var(--primary)]/15 text-[var(--primary)] flex items-center justify-center text-lg font-bold">
+                                    {friend.name.slice(0, 1)}
+                                </div>
+                            )}
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="font-bold text-black/90 dark:text-white/90 truncate">{friend.name}</span>
+                                    <Icon
+                                        name="fa6-solid:arrow-up-right-from-square"
+                                        class="text-[0.7rem] text-black/25 dark:text-white/25 opacity-0 group-hover:opacity-100 transition"
+                                    ></Icon>
+                                </div>
+                                {friend.description && (
+                                    <div class="text-sm text-black/50 dark:text-white/50 truncate">{friend.description}</div>
+                                )}
+                                {friend.tags && friend.tags.length > 0 && (
+                                    <div class="flex flex-wrap gap-1.5 mt-1.5">
+                                        {friend.tags.map((tag) => (
+                                            <span class="text-xs px-2 py-0.5 rounded-md bg-black/5 dark:bg-white/10 text-black/50 dark:text-white/50">
+                                                {tag}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </a>
+                    ))}
+                </div>
+            ) : (
+                <div class="rounded-2xl border border-dashed border-[var(--line-divider)] px-6 py-10 text-center">
+                    <Icon name="material-symbols:inbox-outline-rounded" class="text-[2.5rem] text-black/20 dark:text-white/20"></Icon>
+                    <p class="mt-3 text-black/50 dark:text-white/50">还没有添加友链。</p>
+                    <p class="mt-1 text-sm text-black/35 dark:text-white/35">
+                        编辑 <code class="px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/10">src/data/friends.ts</code> 即可添加。
+                    </p>
+                </div>
+            )}
+        </div>
+    </div>
+</MainGridLayout>

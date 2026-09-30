@@ -1,0 +1,118 @@
+---
+/*
+ * Giscus 加载器（本身不渲染任何可见内容）。
+ *
+ * 为什么要单独放在全局布局里：
+ * Fuwari 用 Swup 做无刷新切换，Astro 只会把「当前页面用到的组件」里的 <script>
+ * 打包进去。如果加载器写在文章页组件里，访客从首页点进文章时（Swup 只替换
+ * main 的内容、不会执行新插入的脚本）加载器根本不会运行，评论区就会一直空着。
+ * 放进 Layout 可以保证任意入口进来都有这段脚本。
+ */
+---
+
+<script>
+	const CONTAINER_SELECTOR = ".giscus-container";
+
+	function resolveTheme(): string {
+		const stored = localStorage.getItem("theme") || "auto";
+		if (stored === "dark") return "dark";
+		if (stored === "light") return "light";
+		return window.matchMedia("(prefers-color-scheme: dark)").matches
+			? "dark"
+			: "light";
+	}
+
+	function syncTheme(retries = 0): void {
+		const iframe = document.querySelector<HTMLIFrameElement>(
+			"iframe.giscus-frame",
+		);
+		if (!iframe || !iframe.contentWindow) {
+			// iframe 可能还没渲染出来，稍后重试几次
+			if (retries < 5) {
+				window.setTimeout(() => syncTheme(retries + 1), 400);
+			}
+			return;
+		}
+		iframe.contentWindow.postMessage(
+			{ giscus: { setConfig: { theme: resolveTheme() } } },
+			"https://giscus.app",
+		);
+	}
+
+	function loadGiscus(): void {
+		const container = document.querySelector<HTMLElement>(CONTAINER_SELECTOR);
+		if (!container) return;
+
+		// 已经加载过就只同步一次主题，避免重复插入 iframe
+		if (container.dataset.loaded === "true") {
+			syncTheme();
+			return;
+		}
+
+		container.innerHTML = "";
+		const script = document.createElement("script");
+		script.src = "https://giscus.app/client.js";
+		script.async = true;
+		script.crossOrigin = "anonymous";
+
+		const attrs: Record<string, string | undefined> = {
+			"data-repo": container.dataset.repo,
+			"data-repo-id": container.dataset.repoId,
+			"data-category": container.dataset.category,
+			"data-category-id": container.dataset.categoryId,
+			"data-mapping": container.dataset.mapping ?? "pathname",
+			"data-strict": container.dataset.strict ?? "0",
+			"data-reactions-enabled": container.dataset.reactionsEnabled ?? "1",
+			"data-emit-metadata": container.dataset.emitMetadata ?? "0",
+			"data-input-position": container.dataset.inputPosition ?? "top",
+			"data-lang": container.dataset.lang ?? "zh-CN",
+			"data-loading": container.dataset.loading ?? "lazy",
+			"data-theme": resolveTheme(),
+		};
+		for (const [key, value] of Object.entries(attrs)) {
+			if (value !== undefined) script.setAttribute(key, value);
+		}
+
+		container.appendChild(script);
+		container.dataset.loaded = "true";
+	}
+
+	let started = false;
+
+	function setup(): void {
+		if (started) return;
+		started = true;
+
+		loadGiscus();
+
+		// 主题切换（亮 / 暗 / 跟随系统）时让评论区跟着变
+		new MutationObserver(() => syncTheme()).observe(document.documentElement, {
+			attributes: true,
+			attributeFilter: ["class"],
+		});
+		window
+			.matchMedia("(prefers-color-scheme: dark)")
+			.addEventListener("change", () => syncTheme());
+
+		const swup = (
+			window as unknown as {
+				swup?: { hooks: { on: (event: string, cb: () => void) => void } };
+			}
+		).swup;
+		if (swup?.hooks) {
+			swup.hooks.on("page:view", () => loadGiscus());
+		}
+	}
+
+	if ((window as unknown as { swup?: unknown }).swup) {
+		setup();
+	} else {
+		document.addEventListener("swup:enable", setup, { once: true });
+		// 兜底：万一 Swup 没有启用，至少也要把评论区加载出来
+		window.setTimeout(() => {
+			if (!document.querySelector("iframe.giscus-frame")) {
+				setup();
+			}
+		}, 800);
+	}
+</script>
