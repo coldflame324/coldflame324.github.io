@@ -131,3 +131,74 @@
     }
     
 }
+
+/* ---------- 正文开头的目录 ---------- */
+/* 用 <nav class="post-toc"> 写在文章里，链接用 class="no-styling" 避开
+   上面 a:not(.no-styling) 的虚线下划线样式，这里的样式完全自定义。 */
+
+.custom-md .post-toc {
+    margin: 0 0 2rem;
+    padding: 1rem 1.25rem 0.9rem;
+    border-radius: var(--radius-large);
+    background-color: var(--btn-regular-bg);
+}
+
+.custom-md .post-toc-head {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.55rem;
+    font-weight: bold;
+    font-size: 0.95rem;
+}
+
+.custom-md .post-toc-head:before {
+    content: "";
+    width: 0.25rem;
+    height: 1rem;
+    border-radius: 9999px;
+    background-color: var(--primary);
+}
+
+.custom-md .post-toc ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: post-toc;
+}
+
+.custom-md .post-toc li {
+    margin: 0;
+    counter-increment: post-toc;
+}
+
+.custom-md .post-toc li a {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    padding: 0.32rem 0.5rem;
+    margin: 0 -0.5rem;
+    border-radius: 0.5rem;
+    font-size: 0.95rem;
+    color: inherit;
+    text-decoration: none;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+/* 序号用等宽数字，两位序号不会把标题挤得参差不齐 */
+.custom-md .post-toc li a:before {
+    content: counter(post-toc, decimal-leading-zero);
+    flex-shrink: 0;
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--primary);
+}
+
+.custom-md .post-toc li a:hover {
+    background-color: var(--btn-regular-bg-hover);
+    color: var(--primary);
+}
+
+.custom-md .post-toc li a:active {
+    background-color: var(--btn-regular-bg);
+}
