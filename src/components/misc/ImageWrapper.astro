@@ -1,6 +1,26 @@
 ---
 import path from "node:path";
 
+/*
+ * 全局样式在这里显式引入。
+ *
+ * 这些样式原先是被下面那个 import.meta.glob("../../**") 顺带卷进来的：
+ * 那个 glob 本意是取图片，却把 src/ 下所有文件（.ts/.svelte/.css/.styl…）
+ * 都变成了动态 import，样式就成了「副作用式」加载，编译先后顺序不确定，
+ * markdown.css 里跨文件 @apply main.css 的类时会让构建随机失败。
+ *
+ * 现在 glob 只匹配图片扩展名，样式在这里按固定顺序引入。顺序即层叠顺序：
+ * 先变量，再组件类，然后是正文与各功能模块。
+ */
+import "../../styles/variables.styl";
+import "../../styles/main.css";
+import "../../styles/markdown.css";
+import "../../styles/markdown-extend.styl";
+import "../../styles/expressive-code.css";
+import "../../styles/photoswipe.css";
+import "../../styles/scrollbar.css";
+import "../../styles/transition.css";
+
 interface Props {
 	id?: string;
 	src: string;
@@ -29,9 +49,13 @@ const isPublic = src.startsWith("/");
 // biome-ignore lint/suspicious/noImplicitAnyLet: <check later>
 let img;
 if (isLocal) {
-	const files = import.meta.glob<ImageMetadata>("../../**", {
-		import: "default",
-	});
+	// 只匹配图片，不要写成 "../../**"——那样会把 src/ 下所有文件都变成动态 import
+	const files = import.meta.glob<ImageMetadata>(
+		"../../**/*.{png,jpg,jpeg,webp,gif,svg,avif,ico,bmp}",
+		{
+			import: "default",
+		},
+	);
 	let normalizedPath = path
 		.normalize(path.join("../../", basePath, src))
 		.replace(/\\/g, "/");
