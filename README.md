@@ -40,19 +40,30 @@ draft: false      # 改成 true 就不会被发布
 | `src/config.ts` | 站点标题、副标题、主题色、导航栏、个人信息、Giscus 评论 |
 | `src/content/spec/about.md` | 「关于」页面的内容 |
 | `src/data/friends.ts` | 友链列表 |
+| `src/pages/guestbook.astro` | 留言板页面的文案 |
 | `astro.config.mjs` | 站点域名等构建配置 |
 | `tailwind.config.cjs` | 字体栈（西文 Roboto，中文回退到系统黑体） |
 | `src/styles/main.css` | 全局样式与中文排版微调 |
 
-## 开启评论（Giscus）
+## 评论与留言板（Giscus）
 
-评论区已经写好并接进了文章页，但默认关闭，因为需要你先在 GitHub 上做三件事：
+评论基于 GitHub Discussions，不需要服务器，一共两个入口：
+
+- **文章评论**：每篇文章底部各有自己的评论区，按文章路径（`mapping: pathname`）对应一个 discussion；
+- **留言板**：导航栏的「留言板」（`/guestbook/`），所有人的留言汇聚到固定标题的那一个 discussion，标题由 `giscusConfig.guestbook.term` 决定。
+
+两处共用 `src/config.ts` 里同一份 `giscusConfig`，用的是仓库的 **Announcements（公告）** 分类，**已开启**。
+
+选公告格式是因为这种分类只有仓库维护者能新建 discussion，访客只能评论和回复，别人没法在你仓库里手动开新帖刷屏。想单独关掉某一处：文章评论由 `giscusConfig.enable` 控制，留言板还要 `giscusConfig.guestbook.enable` 也为 `true`；关掉之后 `/guestbook/` 会显示一张「留言板还没开启」的占位卡片，不会报错。
+
+以后换仓库或者换分类（比如想把站点公告和文章评论分开）时，需要：
 
 1. 打开仓库 `Settings → General → Features`，勾选 **Discussions**；
 2. 到 <https://github.com/apps/giscus> 给这个仓库安装 giscus App；
-3. 打开 <https://giscus.app/zh-CN>，填入仓库名 `coldflame324/coldflame324.github.io`，按提示选择讨论分类，页面会给出 `category` 和 `categoryId`。
+3. 打开 <https://giscus.app/zh-CN>，填入仓库名 `coldflame324/coldflame324.github.io`，按提示选择讨论分类，页面会给出 `category` 和 `categoryId`；
+4. 把 `category`、`categoryId` 换成上一步拿到的值。`repoId` 已经填好了，不用动。
 
-然后编辑 `src/config.ts` 里的 `giscusConfig`，把 `category`、`categoryId` 换成上一步拿到的值，并把 `enable` 改成 `true`。`repoId` 已经填好了，不用动。
+只想开其中一处也行：文章评论由 `giscusConfig.enable` 控制，留言板还需要 `giscusConfig.guestbook.enable` 也为 `true`。配置没填好之前，`/guestbook/` 显示一张「留言板还没开启」的占位卡片，不会报错。
 
 ## 部署
 

@@ -2,26 +2,52 @@
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import { giscusConfig } from "@/config";
+import type { GiscusConfig } from "@/types/config";
+
+interface Props {
+	/** 讨论映射方式，默认沿用 giscusConfig.mapping（文章页按 pathname，每篇一个 discussion） */
+	mapping?: GiscusConfig["mapping"];
+	/** mapping 为 specific 时使用的固定讨论标题，例如留言板的「留言板」 */
+	term?: string;
+	/** 评论区标题，传空字符串可以隐藏标题栏 */
+	heading?: string;
+	/** 额外的开关，留言板用它叠加 giscusConfig.guestbook.enable */
+	enabled?: boolean;
+	class?: string;
+}
+
+const {
+	mapping = giscusConfig.mapping,
+	term,
+	heading = i18n(I18nKey.comments),
+	enabled = true,
+	class: className,
+} = Astro.props;
+
+const visible = giscusConfig.enable && enabled;
 ---
 
-{giscusConfig.enable && (
-    <div class="flex w-full rounded-[var(--radius-large)] overflow-hidden relative mb-4">
+{visible && (
+    <div class:list={["flex w-full rounded-[var(--radius-large)] overflow-hidden relative mb-4", className]}>
         <div class="card-base z-10 px-6 md:px-9 py-6 relative w-full">
-            <div class="flex items-center gap-3 mb-5">
-                <div class="transition h-6 w-6 rounded-md bg-black/5 dark:bg-white/10 text-black/50 dark:text-white/50 flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" height="1em" viewBox="0 -960 960 960" width="1em" fill="currentColor">
-                        <path d="M240-400h480v-80H240v80Zm0-120h480v-80H240v80Zm-80 360q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h640q33 0 56.5 23.5T880-720v480q0 33-23.5 56.5T800-160H240l-80 80v-80Z"/>
-                    </svg>
+            {heading && (
+                <div class="flex items-center gap-3 mb-5">
+                    <div class="transition h-6 w-6 rounded-md bg-black/5 dark:bg-white/10 text-black/50 dark:text-white/50 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" height="1em" viewBox="0 -960 960 960" width="1em" fill="currentColor">
+                            <path d="M240-400h480v-80H240v80Zm0-120h480v-80H240v80Zm-80 360q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h640q33 0 56.5 23.5T880-720v480q0 33-23.5 56.5T800-160H240l-80 80v-80Z"/>
+                        </svg>
+                    </div>
+                    <span class="font-bold text-black/90 dark:text-white/90">{heading}</span>
                 </div>
-                <span class="font-bold text-black/90 dark:text-white/90">{i18n(I18nKey.comments)}</span>
-            </div>
+            )}
             <div
                 class="giscus-container"
                 data-repo={giscusConfig.repo}
                 data-repo-id={giscusConfig.repoId}
                 data-category={giscusConfig.category}
                 data-category-id={giscusConfig.categoryId}
-                data-mapping={giscusConfig.mapping}
+                data-mapping={mapping}
+                data-term={term}
                 data-strict={giscusConfig.strict ? "1" : "0"}
                 data-reactions-enabled={giscusConfig.reactionsEnabled ? "1" : "0"}
                 data-emit-metadata={giscusConfig.emitMetadata ? "1" : "0"}

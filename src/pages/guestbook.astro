@@ -1,0 +1,50 @@
+---
+import Comments from "@components/misc/Comments.astro";
+import MainGridLayout from "@layouts/MainGridLayout.astro";
+import { Icon } from "astro-icon/components";
+import { giscusConfig } from "../config";
+
+const pageTitle = "留言板";
+const pageDescription = "寒火的留言板，想说什么都可以写在这里。";
+const guestbookOpen = giscusConfig.enable && giscusConfig.guestbook.enable;
+---
+<MainGridLayout title={pageTitle} description={pageDescription}>
+    <div class="flex w-full rounded-[var(--radius-large)] overflow-hidden relative min-h-32 mb-4">
+        <div class="card-base z-10 px-6 md:px-9 py-6 relative w-full onload-animation">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="transition h-9 w-9 rounded-lg bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center">
+                    <Icon name="material-symbols:chat-bubble-outline-rounded" class="text-[1.5rem]"></Icon>
+                </div>
+                <h1 class="text-2xl font-bold text-black/90 dark:text-white/90">{pageTitle}</h1>
+            </div>
+            <p class="text-sm text-black/50 dark:text-white/50">
+                想法、建议、催更、随便聊两句都行。留言需要登录 GitHub 账号，内容会存进本站仓库的 Discussions，和文章评论放在一起管理。
+            </p>
+            <p class="text-sm text-black/50 dark:text-white/50 mt-1">
+                如果是某篇文章的问题，直接在那篇文章下面留言更容易被我看到。
+            </p>
+        </div>
+    </div>
+
+    {guestbookOpen ? (
+        <Comments
+            mapping="specific"
+            term={giscusConfig.guestbook.term}
+            heading=""
+        />
+    ) : (
+        <div class="flex w-full rounded-[var(--radius-large)] overflow-hidden relative mb-4">
+            <div class="card-base z-10 px-6 md:px-9 py-6 relative w-full onload-animation">
+                <div class="rounded-2xl border border-dashed border-[var(--line-divider)] px-6 py-10 text-center">
+                    <Icon name="material-symbols:chat-bubble-outline-rounded" class="text-[2.5rem] text-black/20 dark:text-white/20"></Icon>
+                    <p class="mt-3 text-black/50 dark:text-white/50">留言板还没开启。</p>
+                    <p class="mt-1 text-sm text-black/35 dark:text-white/35">
+                        按 README 里的「开启评论」填好
+                        <code class="px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/10">src/config.ts</code>
+                        中的 giscus 配置即可。
+                    </p>
+                </div>
+            </div>
+        </div>
+    )}
+</MainGridLayout>

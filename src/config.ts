@@ -50,6 +50,10 @@ export const navBarConfig: NavBarConfig = {
 			name: "友链",
 			url: "/friends/", // Internal links should not include the base path, as it is automatically added
 		},
+		{
+			name: "留言板",
+			url: "/guestbook/",
+		},
 		LinkPreset.About,
 		{
 			name: "Bilibili",
@@ -94,20 +98,26 @@ export const expressiveCodeConfig: ExpressiveCodeConfig = {
 /**
  * Giscus 评论（基于 GitHub Discussions，无需服务器）。
  *
- * 启用前必须完成以下步骤，否则评论区会显示报错：
+ * 两个评论区共用这一份配置：
+ *   - 文章页：每篇文章按其路径（mapping: pathname）对应一个 discussion；
+ *   - 留言板：/guestbook/ 页面，所有留言汇聚到 guestbook.term 指定的一个 discussion。
+ *
+ * 当前用仓库的 Announcements（公告）分类，已接好并开启。
+ * 选公告格式是因为只有维护者能新建 discussion、访客只能评论回复，别人没法在仓库里手动开帖刷屏。
+ *
+ * 以后换仓库 / 换分类 / 重装时，按下面几步走，再改这里的 category、categoryId：
  *   1. 在仓库 Settings → General → Features 中勾选 Discussions；
- *   2. 在 https://github.com/apps/giscus 为 coldflame324/coldflame324.github.io 安装 giscus App；
- *   3. 打开 https://giscus.app/zh-CN ，填入仓库名后按页面提示拿到 category 与 categoryId；
- *   4. 把下面 4 个占位值替换成真实值，并将 enable 改为 true。
+ *   2. 在 https://github.com/apps/giscus 为新仓库安装 giscus App；
+ *   3. 打开 https://giscus.app/zh-CN ，填入仓库名后按页面提示拿到 category 与 categoryId。
  *
  * repoId 已填好，无需修改。
  */
 export const giscusConfig: GiscusConfig = {
-	enable: false, // TODO: 配置好下面几项后改成 true
+	enable: true,
 	repo: "coldflame324/coldflame324.github.io",
 	repoId: "R_kgDOU0-fNg",
-	category: "Announcements", // TODO: 替换成你在 giscus.app 选择的讨论分类名
-	categoryId: "", // TODO: 替换成 giscus.app 给出的 categoryId（形如 DIC_kwDO...）
+	category: "Announcements",
+	categoryId: "DIC_kwDOU0-fNs4DGy5N",
 	mapping: "pathname", // 每篇文章按其路径对应一个 discussion
 	strict: false,
 	reactionsEnabled: true,
@@ -115,4 +125,8 @@ export const giscusConfig: GiscusConfig = {
 	inputPosition: "top",
 	lang: "zh-CN",
 	loading: "lazy",
+	guestbook: {
+		enable: true,
+		term: "留言板", // 留言板的 discussion 标题。改了相当于换一个讨论：旧留言还在 GitHub 上，但留言板不再显示它们
+	},
 };

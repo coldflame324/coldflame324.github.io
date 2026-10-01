@@ -23,58 +23,65 @@
 	}
 
 	function syncTheme(retries = 0): void {
-		const iframe = document.querySelector<HTMLIFrameElement>(
+		const iframes = document.querySelectorAll<HTMLIFrameElement>(
 			"iframe.giscus-frame",
 		);
-		if (!iframe || !iframe.contentWindow) {
+		if (iframes.length === 0 || !iframes[0]?.contentWindow) {
 			// iframe 可能还没渲染出来，稍后重试几次
 			if (retries < 5) {
 				window.setTimeout(() => syncTheme(retries + 1), 400);
 			}
 			return;
 		}
-		iframe.contentWindow.postMessage(
-			{ giscus: { setConfig: { theme: resolveTheme() } } },
-			"https://giscus.app",
-		);
+		for (const iframe of iframes) {
+			iframe.contentWindow?.postMessage(
+				{ giscus: { setConfig: { theme: resolveTheme() } } },
+				"https://giscus.app",
+			);
+		}
 	}
 
 	function loadGiscus(): void {
-		const container = document.querySelector<HTMLElement>(CONTAINER_SELECTOR);
-		if (!container) return;
+		const containers =
+			document.querySelectorAll<HTMLElement>(CONTAINER_SELECTOR);
+		if (containers.length === 0) return;
 
-		// 已经加载过就只同步一次主题，避免重复插入 iframe
-		if (container.dataset.loaded === "true") {
-			syncTheme();
-			return;
+		for (const container of containers) {
+			// 已经加载过就跳过，避免重复插入 iframe
+			if (container.dataset.loaded === "true") continue;
+
+			container.innerHTML = "";
+			const script = document.createElement("script");
+			script.src = "https://giscus.app/client.js";
+			script.async = true;
+			script.crossOrigin = "anonymous";
+
+			const attrs: Record<string, string | undefined> = {
+				"data-repo": container.dataset.repo,
+				"data-repo-id": container.dataset.repoId,
+				"data-category": container.dataset.category,
+				"data-category-id": container.dataset.categoryId,
+				"data-mapping": container.dataset.mapping ?? "pathname",
+				// mapping 为 specific 时用它指定固定的 discussion 标题（留言板用）
+				"data-term": container.dataset.term,
+				"data-strict": container.dataset.strict ?? "0",
+				"data-reactions-enabled": container.dataset.reactionsEnabled ?? "1",
+				"data-emit-metadata": container.dataset.emitMetadata ?? "0",
+				"data-input-position": container.dataset.inputPosition ?? "top",
+				"data-lang": container.dataset.lang ?? "zh-CN",
+				"data-loading": container.dataset.loading ?? "lazy",
+				"data-theme": resolveTheme(),
+			};
+			for (const [key, value] of Object.entries(attrs)) {
+				if (value !== undefined) script.setAttribute(key, value);
+			}
+
+			container.appendChild(script);
+			container.dataset.loaded = "true";
 		}
 
-		container.innerHTML = "";
-		const script = document.createElement("script");
-		script.src = "https://giscus.app/client.js";
-		script.async = true;
-		script.crossOrigin = "anonymous";
-
-		const attrs: Record<string, string | undefined> = {
-			"data-repo": container.dataset.repo,
-			"data-repo-id": container.dataset.repoId,
-			"data-category": container.dataset.category,
-			"data-category-id": container.dataset.categoryId,
-			"data-mapping": container.dataset.mapping ?? "pathname",
-			"data-strict": container.dataset.strict ?? "0",
-			"data-reactions-enabled": container.dataset.reactionsEnabled ?? "1",
-			"data-emit-metadata": container.dataset.emitMetadata ?? "0",
-			"data-input-position": container.dataset.inputPosition ?? "top",
-			"data-lang": container.dataset.lang ?? "zh-CN",
-			"data-loading": container.dataset.loading ?? "lazy",
-			"data-theme": resolveTheme(),
-		};
-		for (const [key, value] of Object.entries(attrs)) {
-			if (value !== undefined) script.setAttribute(key, value);
-		}
-
-		container.appendChild(script);
-		container.dataset.loaded = "true";
+		// 已经加载过的容器可能只是需要跟着主题变一下
+		syncTheme();
 	}
 
 	let started = false;
