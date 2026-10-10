@@ -44,7 +44,7 @@ export const friends: Friend[] = [
 	{
 		name: "Astepluver",
 		url: "https://astepluver.github.io/",
-		avatar: "https://github.com/Astepluver.png",
+		avatar: "https://astepluver.github.io/images/avatar.webp",
 		description: "基础医学（病原生物学）：细菌耐药研究与文献笔记。",
 		tags: ["医学", "文献笔记"],
 	},
