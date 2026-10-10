@@ -21,6 +21,7 @@ import { AdmonitionComponent } from "./src/plugins/rehype-component-admonition.m
 import { GithubCardComponent } from "./src/plugins/rehype-component-github-card.mjs";
 import { parseDirectiveNode } from "./src/plugins/remark-directive-rehype.js";
 import { remarkExcerpt } from "./src/plugins/remark-excerpt.js";
+import { remarkHasMath } from "./src/plugins/remark-has-math.mjs";
 import { remarkReadingTime } from "./src/plugins/remark-reading-time.mjs";
 import { pluginCustomCopyButton } from "./src/plugins/expressive-code/custom-copy-button.js";
 
@@ -105,6 +106,7 @@ export default defineConfig({
 	markdown: {
 		remarkPlugins: [
 			remarkMath,
+			remarkHasMath /* 依赖同一数组里的 remarkMath：它注册了语法扩展，树上才会有 math 节点 */,
 			remarkReadingTime,
 			remarkExcerpt,
 			remarkGithubAdmonitionsToDirectives,

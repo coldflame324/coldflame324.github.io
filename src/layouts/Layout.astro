@@ -19,7 +19,10 @@ import {
 import { defaultFavicons } from "../constants/icon";
 import type { Favicon } from "../types/config";
 import { pathsEqual, url } from "../utils/url-utils";
-import "katex/dist/katex.css";
+
+// KaTeX 的样式不再无条件加载：它会给主样式表平白增加约 29 KB 原始 / 7 KB gzip（约 17%），
+// 而全站绝大多数页面根本没有公式。现在改由 <KatexStyles /> 按需注入，
+// 什么时候该注入见 src/plugins/remark-has-math.mjs。
 
 interface Props {
 	title?: string;
@@ -309,6 +312,7 @@ function initCustomScrollbar() {
 	});
 
 	const katexElements = document.querySelectorAll('.katex-display') as NodeListOf<HTMLElement>;
+	if (katexElements.length === 0) return; // 没有公式就别做这些无用功
 
 	const katexObserverOptions = {
 		root: null,

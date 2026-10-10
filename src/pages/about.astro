@@ -1,6 +1,7 @@
 ---
 
 import { getEntry, render } from "astro:content";
+import KatexStyles from "@components/misc/KatexStyles.astro";
 import Markdown from "@components/misc/Markdown.astro";
 import I18nKey from "../i18n/i18nKey";
 import { i18n } from "../i18n/translation";
@@ -12,9 +13,14 @@ if (!aboutPost) {
 	throw new Error("About page content not found");
 }
 
-const { Content } = await render(aboutPost);
+const { Content, remarkPluginFrontmatter } = await render(aboutPost);
+
+// 「关于」页也是 markdown，万一以后在里面写了公式，KaTeX 样式同样得跟上，
+// 否则会渲染出没有样式的公式（判定逻辑见 src/plugins/remark-has-math.mjs）。
+const hasMath = remarkPluginFrontmatter.hasMath;
 ---
 <MainGridLayout title={i18n(I18nKey.about)} description={i18n(I18nKey.about)}>
+    {hasMath && <Fragment slot="head"><KatexStyles /></Fragment>}
     <div class="flex w-full rounded-[var(--radius-large)] overflow-hidden relative min-h-32">
         <div class="card-base z-10 px-9 py-6 relative w-full ">
             <Markdown class="mt-2">

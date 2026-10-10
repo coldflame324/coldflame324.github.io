@@ -1,0 +1,23 @@
+---
+/**
+ * 按需加载 KaTeX 样式。
+ *
+ * 背景：以前 src/layouts/Layout.astro 无条件 `import "katex/dist/katex.css"`，
+ * 导致 KaTeX 那约 29 KB 的样式被打进了所有页面共用的主样式表
+ * （_page_.xxx.css 从 142 KB 涨到 171 KB，KaTeX 占了其中约 17%），
+ * 而实际上只有写数学公式的文章才用得到。
+ *
+ * 现在改成：只有页面确实需要时才渲染这个组件，
+ * 由它输出一个指向独立 CSS 文件的 <link>。
+ * 该不该渲染由 src/plugins/remark-has-math.mjs 判定。
+ * 用法（放在布局的 head slot 里）：
+ *
+ *   <Fragment slot="head"><KatexStyles /></Fragment>
+ *
+ * 注意这里是 `?url` 而不是直接 import —— 直接 import 会让 Vite 把样式
+ * 合并进页面的 CSS 包，就白改了。
+ */
+import katexCssUrl from "katex/dist/katex.min.css?url";
+---
+
+<link rel="stylesheet" href={katexCssUrl} />
