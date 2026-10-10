@@ -48,4 +48,11 @@ export const friends: Friend[] = [
 		description: "基础医学（病原生物学）：细菌耐药研究与文献笔记。",
 		tags: ["医学", "文献笔记"],
 	},
+	{
+		name: "ZXHYCZX",
+		url: "https://zxhyczx.github.io/blog/",
+		avatar: "https://zxhyczx.github.io/blog/_astro/avatar.DodcwRNI_9EVGQ.webp",
+		description: "记录学习，也记录生活：算法笔记为主。",
+		tags: ["算法笔记"],
+	},
 ];
