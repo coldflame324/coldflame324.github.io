@@ -132,6 +132,23 @@
     
 }
 
+/* ---------- 正文开头的副题 ---------- */
+/* 源笔记里紧跟标题的那一行（例如《山娜菲》的“赛博朋克”）。正文里不写 h1，
+   标题由页面用 frontmatter 渲染，所以副题单独给一条克制的样式，免得它像个孤零零的段落。 */
+
+.custom-md .post-subtitle {
+    margin: 0 0 1.25rem;
+    font-size: 0.925rem;
+    font-weight: 500;
+    line-height: 1.5;
+    letter-spacing: 0.08em;
+    color: oklch(0.55 0.02 var(--hue));
+}
+
+.dark .custom-md .post-subtitle {
+    color: oklch(0.78 0.02 var(--hue));
+}
+
 /* ---------- 正文开头的目录 ---------- */
 /* 用 <nav class="post-toc"> 写在文章里，链接用 class="no-styling" 避开
    上面 a:not(.no-styling) 的虚线下划线样式，这里的样式完全自定义。 */
