@@ -26,4 +26,26 @@ export type Friend = {
  *
  * 保存后重新构建（或本地 `pnpm dev`）就能看到。
  */
-export const friends: Friend[] = [];
+export const friends: Friend[] = [
+	{
+		name: "ff66ccff",
+		url: "https://ff66ccff.github.io/",
+		avatar: "https://github.com/ff66ccff.png",
+		description: "算法竞赛与 Vibe Coding 笔记。",
+		tags: ["技术", "算法"],
+	},
+	{
+		name: "Valproate",
+		url: "https://lingyu061126.github.io/",
+		avatar: "https://github.com/LingYu061126.png",
+		description: "电气本科生的学习笔记与碎碎念。",
+		tags: ["学习笔记"],
+	},
+	{
+		name: "Astepluver",
+		url: "https://astepluver.github.io/",
+		avatar: "https://github.com/Astepluver.png",
+		description: "基础医学（病原生物学）：细菌耐药研究与文献笔记。",
+		tags: ["医学", "文献笔记"],
+	},
+];
