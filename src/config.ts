@@ -5,6 +5,7 @@ import type {
 	NavBarConfig,
 	ProfileConfig,
 	SiteConfig,
+	VisitorStatsConfig,
 } from "./types/config";
 import { LinkPreset } from "./types/config";
 
@@ -129,4 +130,23 @@ export const giscusConfig: GiscusConfig = {
 		enable: true,
 		term: "留言板", // 留言板的 discussion 标题。改了相当于换一个讨论：旧留言还在 GitHub 上，但留言板不再显示它们
 	},
+};
+
+/**
+ * 侧栏访客统计（访客数 / 访问量）。
+ *
+ * 博客是纯静态部署在 GitHub Pages 上的，没有自己的后端，所以计数只能借第三方服务。
+ * 这里接的是 Vercount（https://vercount.one/）——不蒜子停止维护后的替代品：
+ * 免注册、免 API key，一次 POST 就把数字带回来，所以不用往页面里塞第三方 <script>，
+ * 少一个外部脚本也就少一份拖慢首屏的风险（和 KaTeX 那次的思路一致）。
+ *
+ * 计数按 host 聚合：coldflame324.github.io 全站累加，正好是站级的「访客数 / 访问量」。
+ * 去重靠 cookie，所以同一个人换页只算一个新访客，但每页都会让访问量 +1。
+ *
+ * 换服务：改下面的 apiUrl，再把 VisitorStats.astro 里取的字段（site_uv / site_pv）跟着改。
+ * 关掉板块：enable 置 false，卡片就不渲染了，计数器脚本也随之变成空转。
+ */
+export const visitorStatsConfig: VisitorStatsConfig = {
+	enable: true,
+	apiUrl: "https://events.vercount.one/api/v2/log",
 };

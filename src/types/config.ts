@@ -124,3 +124,10 @@ export type GiscusGuestbookConfig = {
 	/** 所有留言汇聚到这一个 discussion，标题就用这个值（mapping 固定为 specific） */
 	term: string;
 };
+
+export type VisitorStatsConfig = {
+	/** 侧栏「访客统计」板块开关 */
+	enable: boolean;
+	/** 计数接口地址。默认接 Vercount，换服务时只改这里（字段映射见 VisitorStats.astro） */
+	apiUrl: string;
+};

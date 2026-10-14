@@ -1,0 +1,223 @@
+---
+/*
+ * 侧栏访客统计：访客数（UV）+ 访问量（PV）。
+ *
+ * 博客是纯静态的，没有自己的后端，所以数字来自 Vercount（见 config.ts 的 visitorStatsConfig）。
+ * 这里没有引官方那个 3KB 的 <script>，而是自己 POST 一次就够：接口 CORS 全开
+ * （access-control-allow-origin: *），返回体里直接带着要显示的字段。
+ * 少一个外部脚本就少一份拖慢首屏的风险，和之前把 KaTeX 改成按需加载是同一个思路。
+ *
+ * 计数时机是这里最容易踩坑的地方，Swup 的两条特性叠在一起：
+ *   1) 侧栏不在 Swup 的替换容器（astro.config.mjs 里的 main / #toc）里，跨页无刷新跳转时
+ *      整个侧栏不会被重建，所以组件里的 <script> 一次整页加载只执行一次；
+ *   2) 但 Swup 的 page:view 只在真正导航时（renderPage 里）派发，enable() 并不派发。
+ * 所以正确做法是「初始化时直接记一次 + page:view 钩子里再记」：既不会漏掉换页的 PV，
+ * 也不会把首屏算两遍。
+ *
+ * UV 去重靠 cookie 记住「这台机器已经算过」，之后换页只累加 PV。
+ * cookie 名与 Vercount 官方脚本保持一致，将来若换回官方脚本，老访客不会被重复计一次。
+ *
+ * 本地开发时整段逻辑不生效（只留占位符），原因见下面 isLocalHost 的注释。
+ */
+import { Icon } from "astro-icon/components";
+import { visitorStatsConfig } from "../../config";
+import I18nKey from "../../i18n/i18nKey";
+import { i18n } from "../../i18n/translation";
+import WidgetLayout from "./WidgetLayout.astro";
+
+const { enable, apiUrl } = visitorStatsConfig;
+---
+
+{
+	enable && (
+		<WidgetLayout
+			id="visitor-stats"
+			name={i18n(I18nKey.visitorStats)}
+			class="onload-animation"
+			style="animation-delay: 150ms"
+		>
+			<div
+				id="visitor-stats-root"
+				data-api-url={apiUrl}
+				class="flex items-stretch select-none pb-1"
+			>
+				<div class="flex flex-1 flex-col items-center gap-1">
+					<Icon
+						name="fa6-solid:user-group"
+						aria-hidden="true"
+						class="text-[1.25rem] text-[var(--primary)]"
+					/>
+					<div
+						class="text-xl font-bold leading-none tabular-nums text-neutral-900 dark:text-neutral-100"
+						data-visitor-stat="uv"
+					>
+						–
+					</div>
+					<div class="text-xs text-neutral-400 dark:text-neutral-500">
+						{i18n(I18nKey.visitors)}
+					</div>
+				</div>
+				<div class="my-1 w-px bg-[var(--line-divider)]" aria-hidden="true" />
+				<div class="flex flex-1 flex-col items-center gap-1">
+					<Icon
+						name="fa6-solid:eye"
+						aria-hidden="true"
+						class="text-[1.25rem] text-[var(--primary)]"
+					/>
+					<div
+						class="text-xl font-bold leading-none tabular-nums text-neutral-900 dark:text-neutral-100"
+						data-visitor-stat="pv"
+					>
+						–
+					</div>
+					<div class="text-xs text-neutral-400 dark:text-neutral-500">
+						{i18n(I18nKey.pageViews)}
+					</div>
+				</div>
+			</div>
+		</WidgetLayout>
+	)
+}
+
+<script>
+	const ROOT_ID = "visitor-stats-root";
+	const CACHE_KEY = "visitorStatsCache";
+	/** 缓存最多算多久内的旧数字；再久就宁可不显示，免得把陈年数据当成实时值（判断在 readCache 里） */
+	const CACHE_MAX_AGE = 24 * 60 * 60 * 1000;
+	const UV_COOKIE_MAX_AGE = 365 * 24 * 60 * 60;
+	/** UV 去重用的 cookie，名字与 Vercount 官方脚本一致 */
+	const UV_COOKIE = `vercount_uv_${location.host.replace(/[^a-zA-Z0-9_-]/g, "_")}`;
+	/** 整页加载级别的初始化标记，原因见文件末尾 */
+	const STARTED_FLAG = "__visitorStatsStarted";
+
+	/** 接口返回的三个字段里，侧栏只用得上站级的这两个 */
+	type Stats = { site_uv: number; site_pv: number };
+
+	// enable 为 false 时卡片根本没渲染，这个脚本就整体空转
+	const root = document.getElementById(ROOT_ID);
+	const apiUrl = root?.dataset.apiUrl;
+
+	/**
+	 * Vercount 按 host 聚合，而 localhost 是全世界开发者共用的同一个桶
+	 * （实测已经是 4900 万 UV 的量级），本地预览显示它毫无意义，所以只在自己的域名下计数。
+	 * 想在本地验证接通情况时，把这段判断去掉，或者改用局域网 IP 起 preview 即可。
+	 */
+	function isLocalHost(): boolean {
+		const host = location.hostname;
+		return (
+			host === "localhost" ||
+			host === "127.0.0.1" ||
+			host === "::1" ||
+			host === "[::1]" ||
+			host === "0.0.0.0" ||
+			host.endsWith(".local") ||
+			host.endsWith(".localhost")
+		);
+	}
+
+	/**
+	 * 读上次缓存的数字。超过 CACHE_MAX_AGE 的当作没有：
+	 * 接口挂掉时可以退回旧值撑一下，但别把陈年数据当成实时值显示。
+	 */
+	function readCache(): { at: number; data: Stats } | null {
+		try {
+			const raw = localStorage.getItem(CACHE_KEY);
+			if (!raw) return null;
+			const cached = JSON.parse(raw) as { at: number; data: Stats };
+			if (typeof cached?.data?.site_uv !== "number") return null;
+			if (Date.now() - cached.at > CACHE_MAX_AGE) return null;
+			return cached;
+		} catch {
+			// 隐私模式或禁用存储时 localStorage 会直接抛错，当成没缓存即可
+			return null;
+		}
+	}
+
+	function render(data: Stats): void {
+		const cells: [string, number][] = [
+			["uv", data.site_uv],
+			["pv", data.site_pv],
+		];
+		for (const [key, value] of cells) {
+			const cell = root?.querySelector(`[data-visitor-stat="${key}"]`);
+			if (cell) cell.textContent = value.toLocaleString();
+		}
+	}
+
+	async function count(): Promise<void> {
+		// 本地开发不计数：Vercount 按 host 聚合，localhost 是全世界的公共桶（实测 4900 万 UV），
+		// 显示它毫无意义，也免得把本地预览混进真实数据。门禁放在这里，换页补记也要过同一道关。
+		if (!root || !apiUrl || isLocalHost()) return;
+
+		// 只有这台机器还没算过 UV 时，才让服务端把访客数 +1；之后换页只累加访问量
+		const isNewUv = !document.cookie.split("; ").includes(`${UV_COOKIE}=1`);
+
+		try {
+			const response = await fetch(apiUrl, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ url: location.href.split("#")[0], isNewUv }),
+			});
+			if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+			const payload = await response.json();
+			const data = payload?.data ?? payload;
+			if (typeof data?.site_uv !== "number" || typeof data?.site_pv !== "number") {
+				throw new Error("响应里没有统计数据");
+			}
+
+			// 计上了才记 cookie：失败时下次仍按「新访客」重试，不会白白少算一个 UV
+			if (isNewUv) {
+				document.cookie = `${UV_COOKIE}=1; path=/; max-age=${UV_COOKIE_MAX_AGE}; samesite=lax`;
+			}
+			try {
+				localStorage.setItem(CACHE_KEY, JSON.stringify({ at: Date.now(), data }));
+			} catch {
+				// 存不下不影响这次显示
+			}
+			render(data);
+		} catch (error) {
+			// 接口不可用时退回缓存里的旧数字（readCache 已经把过期的滤掉了）
+			const cached = readCache();
+			if (cached) render(cached.data);
+			console.warn("[访客统计] 计数服务不可用：", error);
+		}
+	}
+
+	function bindSwup(): boolean {
+		const swup = (
+			window as unknown as {
+				swup?: { hooks: { on: (event: string, cb: () => void) => void } };
+			}
+		).swup;
+		if (!swup?.hooks) return false;
+		// 侧栏跨页不会被重建，换页的 PV 只能靠这个钩子补记
+		swup.hooks.on("page:view", () => {
+			void count();
+		});
+		return true;
+	}
+
+	// 一次整页加载只初始化一次。@swup/astro 默认挂了 SwupScriptsPlugin，它会在每次换页时
+	// 重跑新页面 body 里的内联脚本，实测这份脚本每导航一次就再执行一遍（浏览器抓到的调用栈里，
+	// 同一份代码以匿名 script 反复出现）。不加这道锁，每换一页就会多注册一个 page:view 回调、
+	// 还会多记一次首屏计数，第 N 次导航要记 N+1 次访问量。
+	const flags = window as unknown as Record<string, unknown>;
+	if (root && flags[STARTED_FLAG] !== true) {
+		flags[STARTED_FLAG] = true;
+
+		// 先用上次的数字把位置填上，避免每次进页面都闪一下占位符
+		const cached = readCache();
+		if (cached) render(cached.data);
+
+		// 首屏这一次得自己记：Swup 初始化时并不派发 page:view
+		void count();
+
+		if (!bindSwup()) {
+			// Swup 还没起来就等它 enable；万一它压根没启用，每次导航都是整页加载，上面的 count 已经够了
+			document.addEventListener("swup:enable", () => void bindSwup(), {
+				once: true,
+			});
+		}
+	}
+</script>
